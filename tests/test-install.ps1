@@ -74,7 +74,17 @@ if ($engine.ProductState($testCode) -eq 5 -or $engine.ProductState($productCode)
     throw 'Upgrade registration mismatch.'
 }
 Write-Output 'Verified the upgrade registered exactly one current product.'
-if (!(Test-Path -LiteralPath $shortcut)) { throw 'Start menu shortcut missing.' }
+if (!(Test-Path -LiteralPath $shortcut)) {
+    foreach ($log in (Get-ChildItem -LiteralPath $work -Filter '*.log')) {
+        Select-String -LiteralPath $log.FullName -Pattern 'Dir \(target\): Key: ProgramMenuFolder|Executing op: Shortcut|Warning 19[0-9]{2}|Component: StartShortcut;|Note: 1: 19[0-9]{2}' |
+            ForEach-Object { $_.Line }
+    }
+    foreach ($dir in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('CommonPrograms'))) {
+        Get-ChildItem -LiteralPath $dir -Recurse -File -Filter '*Usage*' -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty FullName
+    }
+    throw 'Start menu shortcut missing.'
+}
 $shell = New-Object -ComObject WScript.Shell
 $link = $shell.CreateShortcut($shortcut)
 $expectedTarget = Join-Path $appdir 'runtime\pythonw.exe'
