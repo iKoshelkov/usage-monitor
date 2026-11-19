@@ -17,11 +17,11 @@ $testCode = '{' + [guid]::NewGuid().ToString().ToUpperInvariant() + '}'
 $engine = New-Object -ComObject WindowsInstaller.Installer
 function Get-MsiValue($database, [string]$sql) {
     $query = $database.OpenView($sql)
-    $query.Execute()
+    [void]$query.Execute()
     $row = $query.Fetch()
     $value = $row.StringData(1)
-    $query.Close()
-    $value
+    [void]$query.Close()
+    return [string]$value
 }
 function Set-MsiValue($database, [string]$key, [string]$value) {
     $query = $database.OpenView("UPDATE Property SET Value='$value' WHERE Property='$key'")
