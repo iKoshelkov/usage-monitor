@@ -59,6 +59,11 @@ $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Usage Monitor.
 if ((Test-Path -LiteralPath $appdir) -or (Test-Path -LiteralPath $data)) {
     throw 'The release test requires a clean account.'
 }
+Invoke-Installer '/i' $Installer 'Install on a clean PC'
+if (!(Test-Path -LiteralPath $shortcut) -or !(Test-Path -LiteralPath (Join-Path $appdir 'desktop.py'))) {
+    throw 'Fresh installation did not create the launcher and Start shortcut.'
+}
+Invoke-Installer '/x' $productCode 'Remove first installation'
 Invoke-Installer '/i' $oldMsi 'Install previous-version fixture'
 if ($engine.ProductState($testCode) -ne 5) { throw 'Previous version did not register.' }
 $null = New-Item -ItemType Directory -Path $data
@@ -76,7 +81,7 @@ if ($engine.ProductState($testCode) -eq 5 -or $engine.ProductState($productCode)
 Write-Output 'Verified the upgrade registered exactly one current product.'
 if (!(Test-Path -LiteralPath $shortcut)) {
     foreach ($log in (Get-ChildItem -LiteralPath $work -Filter '*.log')) {
-        Select-String -LiteralPath $log.FullName -Pattern 'Dir \(target\): Key: ProgramMenuFolder|Executing op: Shortcut|Warning 19[0-9]{2}|Component: StartShortcut;|Note: 1: 19[0-9]{2}' |
+        Select-String -LiteralPath $log.FullName -Pattern 'Dir \(target\): Key: ProgramMenuFolder|Executing op: Shortcut|Warning 19[0-9]{2}|Component: StartShortcut;|Note: 1: 19[0-9]{2}|Skipping action: CreateShortcuts|Disallowing installation of component|Skipping component: StartShortcut|Another client' |
             ForEach-Object { $_.Line }
     }
     foreach ($dir in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('CommonPrograms'))) {
