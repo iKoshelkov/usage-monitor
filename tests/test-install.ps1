@@ -1,6 +1,10 @@
 # Exercise the per-user MSI in a disposable GitHub-hosted Windows account.
 param([Parameter(Mandatory=$true)][string]$Installer)
 $ErrorActionPreference = 'Stop'
+trap {
+    Write-Output $_.ScriptStackTrace
+    throw $_
+}
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
     throw 'Run this registration test on a disposable GitHub-hosted Windows runner.'
 }
@@ -69,12 +73,15 @@ Invoke-Installer '/i' $Installer 'Upgrade to release'
 if ($engine.ProductState($testCode) -eq 5 -or $engine.ProductState($productCode) -ne 5) {
     throw 'Upgrade registration mismatch.'
 }
+Write-Output 'Verified the upgrade registered exactly one current product.'
 if (!(Test-Path -LiteralPath $shortcut)) { throw 'Start menu shortcut missing.' }
-$link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
+$shell = New-Object -ComObject WScript.Shell
+$link = $shell.CreateShortcut($shortcut)
 $expectedTarget = Join-Path $appdir 'runtime\pythonw.exe'
 if ($link.TargetPath -ne $expectedTarget -or $link.Arguments -ne ('-B "' + (Join-Path $appdir 'desktop.py') + '"')) {
     throw 'The Start menu shortcut does not target the installed launcher.'
 }
+Write-Output 'Verified the registered Start menu command.'
 $app = Start-Process -FilePath $link.TargetPath -ArgumentList ($link.Arguments + ' --no-browser') -WindowStyle Hidden -PassThru
 try {
     $feed = $null
