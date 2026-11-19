@@ -34,7 +34,7 @@ jobs:
             $blob, $expected = $Matches[1], $Matches[2]
             $path = Join-Path $env:RUNNER_TEMP $file
             $url = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/git/blobs/$blob"
-            Invoke-WebRequest -Uri $url -Headers @{Accept='application/vnd.github.raw+json'} -OutFile $path
+            Invoke-WebRequest -Uri $url -Headers @{Accept='application/vnd.github.raw+json';Authorization=('Bearer ' + $env:GH_TOKEN)} -OutFile $path
             if ((Get-FileHash -LiteralPath $path).Hash -ne $expected) { throw 'Installer checksum differs.' }
           } else {
             gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern $file --dir $env:RUNNER_TEMP
